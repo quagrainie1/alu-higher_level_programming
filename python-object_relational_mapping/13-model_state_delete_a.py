@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 """Script that deletes all States with a name containing 'a'."""
 import sys
-from sqlalchemy import create_engine, text
+from sqlalchemy import create_engine
 from sqlalchemy.orm import Session
 from model_state import Base, State
 
@@ -15,8 +15,8 @@ if __name__ == "__main__":
     )
     Base.metadata.create_all(engine)
     session = Session(engine)
-    for state in session.query(State).all():
-        if 'a' in state.name:
-            session.delete(state)
+    to_delete = [s for s in session.query(State).all() if 'a' in s.name]
+    for state in to_delete:
+        session.delete(state)
     session.commit()
     session.close()
