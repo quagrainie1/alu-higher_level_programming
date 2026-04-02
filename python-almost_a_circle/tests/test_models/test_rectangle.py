@@ -1,6 +1,9 @@
 #!/usr/bin/python3
 """Unit tests for the Rectangle class."""
 import unittest
+import io
+import sys
+import os
 from models.base import Base
 from models.rectangle import Rectangle
 
@@ -128,6 +131,89 @@ class TestRectangle(unittest.TestCase):
         """Test ValueError for height of zero."""
         with self.assertRaises(ValueError):
             Rectangle(2, 0)
+
+    def test_y_type_error(self):
+        """Test TypeError raised for non-integer y."""
+        with self.assertRaises(TypeError) as ctx:
+            Rectangle(1, 2, 3, "4")
+        self.assertEqual(str(ctx.exception), "y must be an integer")
+
+    def test_width_negative(self):
+        """Test ValueError raised for negative width."""
+        with self.assertRaises(ValueError) as ctx:
+            Rectangle(-1, 2)
+        self.assertEqual(str(ctx.exception), "width must be > 0")
+
+    def test_display_no_offset(self):
+        """Test display() without x and y."""
+        r = Rectangle(4, 2)
+        captured = io.StringIO()
+        sys.stdout = captured
+        r.display()
+        sys.stdout = sys.__stdout__
+        self.assertEqual(captured.getvalue(), "####\n####\n")
+
+    def test_display_no_y(self):
+        """Test display() with x set but y=0."""
+        r = Rectangle(3, 2, 1, 0)
+        captured = io.StringIO()
+        sys.stdout = captured
+        r.display()
+        sys.stdout = sys.__stdout__
+        self.assertEqual(captured.getvalue(), " ###\n ###\n")
+
+    def test_display_with_x_and_y(self):
+        """Test display() with both x and y set."""
+        r = Rectangle(2, 3, 2, 2)
+        captured = io.StringIO()
+        sys.stdout = captured
+        r.display()
+        sys.stdout = sys.__stdout__
+        self.assertEqual(captured.getvalue(), "\n\n  ##\n  ##\n  ##\n")
+
+    def test_save_to_file_empty_list(self):
+        """Test Rectangle.save_to_file([]) writes empty JSON array."""
+        Rectangle.save_to_file([])
+        with open("Rectangle.json", "r") as f:
+            content = f.read()
+        self.assertEqual(content, "[]")
+        os.remove("Rectangle.json")
+
+    def test_save_to_file_none(self):
+        """Test Rectangle.save_to_file(None) writes empty JSON array."""
+        Rectangle.save_to_file(None)
+        with open("Rectangle.json", "r") as f:
+            content = f.read()
+        self.assertEqual(content, "[]")
+        os.remove("Rectangle.json")
+
+    def test_save_to_file_one_rectangle(self):
+        """Test Rectangle.save_to_file with one Rectangle instance."""
+        r = Rectangle(1, 1)
+        Rectangle.save_to_file([r])
+        with open("Rectangle.json", "r") as f:
+            content = f.read()
+        self.assertIn('"width": 1', content)
+        os.remove("Rectangle.json")
+
+    def test_load_from_file_no_file(self):
+        """Test Rectangle.load_from_file() returns [] when file missing."""
+        if os.path.exists("Rectangle.json"):
+            os.remove("Rectangle.json")
+        result = Rectangle.load_from_file()
+        self.assertEqual(result, [])
+
+    def test_load_from_file_existing(self):
+        """Test Rectangle.load_from_file() returns correct instances."""
+        r1 = Rectangle(10, 7, 2, 8)
+        r2 = Rectangle(2, 4)
+        Rectangle.save_to_file([r1, r2])
+        loaded = Rectangle.load_from_file()
+        self.assertEqual(len(loaded), 2)
+        self.assertIsInstance(loaded[0], Rectangle)
+        self.assertEqual(loaded[0].width, 10)
+        self.assertEqual(loaded[0].height, 7)
+        os.remove("Rectangle.json")
 
 
 if __name__ == "__main__":

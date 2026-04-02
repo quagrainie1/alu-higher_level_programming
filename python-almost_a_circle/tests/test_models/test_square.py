@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 """Unit tests for the Square class."""
 import unittest
+import os
 from models.base import Base
 from models.square import Square
 
@@ -47,7 +48,7 @@ class TestSquare(unittest.TestCase):
         self.assertEqual(s.height, 10)
 
     def test_size_type_error(self):
-        """Test TypeError for non-integer size."""
+        """Test TypeError for non-integer size via setter."""
         with self.assertRaises(TypeError) as ctx:
             s = Square(5)
             s.size = "9"
@@ -110,6 +111,73 @@ class TestSquare(unittest.TestCase):
         from models.rectangle import Rectangle
         s = Square(5)
         self.assertIsInstance(s, Rectangle)
+
+    def test_size_type_error_on_init(self):
+        """Test TypeError for non-integer size at init: Square('1')."""
+        with self.assertRaises(TypeError) as ctx:
+            Square("1")
+        self.assertEqual(str(ctx.exception), "width must be an integer")
+
+    def test_y_type_error_on_init(self):
+        """Test TypeError for non-integer y at init: Square(1, 2, '3')."""
+        with self.assertRaises(TypeError) as ctx:
+            Square(1, 2, "3")
+        self.assertEqual(str(ctx.exception), "y must be an integer")
+
+    def test_size_negative(self):
+        """Test ValueError for negative size: Square(-1)."""
+        with self.assertRaises(ValueError) as ctx:
+            Square(-1)
+        self.assertEqual(str(ctx.exception), "width must be > 0")
+
+    def test_x_negative(self):
+        """Test ValueError for negative x: Square(1, -2)."""
+        with self.assertRaises(ValueError) as ctx:
+            Square(1, -2)
+        self.assertEqual(str(ctx.exception), "x must be >= 0")
+
+    def test_save_to_file_none(self):
+        """Test Square.save_to_file(None) writes empty JSON array."""
+        Square.save_to_file(None)
+        with open("Square.json", "r") as f:
+            content = f.read()
+        self.assertEqual(content, "[]")
+        os.remove("Square.json")
+
+    def test_save_to_file_empty_list(self):
+        """Test Square.save_to_file([]) writes empty JSON array."""
+        Square.save_to_file([])
+        with open("Square.json", "r") as f:
+            content = f.read()
+        self.assertEqual(content, "[]")
+        os.remove("Square.json")
+
+    def test_save_to_file_one_square(self):
+        """Test Square.save_to_file([Square(1)]) saves correctly."""
+        s = Square(1)
+        Square.save_to_file([s])
+        with open("Square.json", "r") as f:
+            content = f.read()
+        self.assertIn('"size": 1', content)
+        os.remove("Square.json")
+
+    def test_load_from_file_no_file(self):
+        """Test Square.load_from_file() returns [] when file missing."""
+        if os.path.exists("Square.json"):
+            os.remove("Square.json")
+        result = Square.load_from_file()
+        self.assertEqual(result, [])
+
+    def test_load_from_file_existing(self):
+        """Test Square.load_from_file() returns correct instances."""
+        s1 = Square(5)
+        s2 = Square(7, 9, 1)
+        Square.save_to_file([s1, s2])
+        loaded = Square.load_from_file()
+        self.assertEqual(len(loaded), 2)
+        self.assertIsInstance(loaded[0], Square)
+        self.assertEqual(loaded[0].size, 5)
+        os.remove("Square.json")
 
 
 if __name__ == "__main__":
